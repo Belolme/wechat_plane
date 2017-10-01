@@ -1,7 +1,10 @@
 package com.billin.www.plant;
 
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -41,12 +44,15 @@ public class MainActivity extends AppCompatActivity {
 
     private Timer mMoveThread;
 
+    private volatile int mEnemyRank;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         mScore = 0;
+        mEnemyRank = 10;
 
         isStart = false;
 
@@ -95,29 +101,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void resetGame() {
+
         isStart = false;
-        mStartAndStopButton.setText("Start");
-
-        // resetGame score number
-        mScore = 0;
-        mScoreTextView.setText(String.valueOf(mScore));
-
         stopUpdateView();
 
-        // remove all view and resetGame hero plant
-        for (EnemyView enemyView : mEnemyViews) {
-            mContainer.removeView(enemyView);
-        }
-        mEnemyViews = new ArrayList<>();
+        Dialog resultDialog = new AlertDialog.Builder(this)
+                .setMessage("你的战绩为 " + mScore)
+                .setPositiveButton("重新开始", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
 
-        for (BulletView bulletView : mBulletViews) {
-            mContainer.removeView(bulletView);
-        }
-        mBulletViews = new ArrayList<>();
+                        mStartAndStopButton.setText("Start");
 
-        mContainer.removeView(mHero);
-        mHero = new HeroView(this);
-        mContainer.addView(mHero);
+                        // resetGame score number
+                        mScore = 0;
+                        mEnemyRank = 10;
+                        mScoreTextView.setText(String.valueOf(mScore));
+
+                        // remove all view and resetGame hero plant
+                        for (EnemyView enemyView : mEnemyViews) {
+                            mContainer.removeView(enemyView);
+                        }
+                        mEnemyViews = new ArrayList<>();
+
+                        for (BulletView bulletView : mBulletViews) {
+                            mContainer.removeView(bulletView);
+                        }
+                        mBulletViews = new ArrayList<>();
+
+                        mContainer.removeView(mHero);
+                        mHero = new HeroView(MainActivity.this);
+                        mContainer.addView(mHero);
+                    }
+                })
+                .setCancelable(false)
+                .show();
     }
 
     private void startGame() {
@@ -211,15 +229,22 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
 
-                // create enemy randomly
-                final EnemyView enemyView = new EnemyView(MainActivity.this, random.nextInt(mScreenX), 50f);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mContainer.addView(enemyView);
-                        mEnemyViews.add(enemyView);
-                    }
-                });
+                if (mEnemyRank < 100) {
+                    mEnemyRank++;
+                }
+
+                for (int i = 0; i < mEnemyRank / 10; i++) {
+
+                    // create enemy randomly
+                    final EnemyView enemyView = new EnemyView(MainActivity.this, random.nextInt(mScreenX), 50f);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mContainer.addView(enemyView);
+                            mEnemyViews.add(enemyView);
+                        }
+                    });
+                }
             }
         }, 0, 1000);
     }
